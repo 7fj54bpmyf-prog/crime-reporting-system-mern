@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 
 const API = 'https://crime-reporting-system-mern.onrender.com';
@@ -26,7 +25,6 @@ export default function App() {
     setTimeout(() => setMessage(''), 4000);
   };
 
-  // Safe API request with timeout
   async function apiRequest(url, options = {}) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
@@ -39,14 +37,12 @@ export default function App() {
 
       const text = await response.text();
 
-      let data;
+      let data = {};
 
       try {
         data = text ? JSON.parse(text) : {};
       } catch {
-        data = {
-          message: text || 'Invalid server response',
-        };
+        data = { message: text || 'Invalid server response' };
       }
 
       return { response, data };
@@ -72,10 +68,12 @@ export default function App() {
     notify('Logged out successfully');
   };
 
+  // =========================
   // REGISTER
+  // =========================
+
   async function register(e) {
     e.preventDefault();
-
     if (loading) return;
 
     setLoading(true);
@@ -95,11 +93,12 @@ export default function App() {
         }
       );
 
-      notify(result.message || 'Registration completed.');
-
       if (response.ok) {
+        notify(result.message || 'Registration successful');
         form.reset();
         setPage('login');
+      } else {
+        notify(result.message || 'Registration failed');
       }
     } catch (error) {
       notify(error.message);
@@ -108,10 +107,12 @@ export default function App() {
     }
   }
 
+  // =========================
   // LOGIN
+  // =========================
+
   async function login(e) {
     e.preventDefault();
-
     if (loading) return;
 
     setLoading(true);
@@ -137,11 +138,18 @@ export default function App() {
         );
 
         setUser(result.user);
-        setPage('home');
 
-        notify(result.message || 'Login successful.');
+        if (result.user.role === 'admin') {
+          setPage('admin');
+        } else if (result.user.role === 'police') {
+          setPage('police');
+        } else {
+          setPage('home');
+        }
+
+        notify(result.message || 'Login successful');
       } else {
-        notify(result.message || 'Login failed.');
+        notify(result.message || 'Login failed');
       }
     } catch (error) {
       notify(error.message);
@@ -150,10 +158,12 @@ export default function App() {
     }
   }
 
-  // REPORT COMPLAINT
+  // =========================
+  // REPORT
+  // =========================
+
   async function report(e) {
     e.preventDefault();
-
     if (loading) return;
 
     setLoading(true);
@@ -184,9 +194,7 @@ export default function App() {
 
         form.reset();
       } else {
-        notify(
-          result.message || 'Unable to submit complaint.'
-        );
+        notify(result.message || 'Unable to submit complaint');
       }
     } catch (error) {
       notify(error.message);
@@ -195,16 +203,20 @@ export default function App() {
     }
   }
 
+  // =========================
   // LOAD COMPLAINTS
-  async function loadComplaints() {
-    if (!user?.email && user?.role !== 'admin') return;
+  // =========================
 
-    const url =
-      user?.role === 'admin'
-        ? API + '/api/complaints'
-        : API +
-          '/api/complaints?email=' +
-          encodeURIComponent(user?.email || '');
+  async function loadComplaints() {
+    if (!user) return;
+
+    let url = API + '/api/complaints';
+
+    if (user.role === 'citizen') {
+      url +=
+        '?email=' +
+        encodeURIComponent(user.email);
+    }
 
     try {
       const { response, data } = await apiRequest(url);
@@ -213,17 +225,57 @@ export default function App() {
         setComplaints(data);
       } else {
         setComplaints([]);
-
-        notify(
-          data.message || 'Unable to load complaints.'
-        );
+        notify(data.message || 'Unable to load complaints');
       }
     } catch (error) {
       notify(error.message);
     }
   }
 
-  // UPDATE COMPLAINT STATUS
+  // =========================
+  // LOAD USERS
+  // =========================
+
+  async function loadUsers() {
+    try {
+      const { response, data } = await apiRequest(
+        API + '/api/users'
+      );
+
+      if (response.ok && Array.isArray(data)) {
+        setUsers(data);
+      } else {
+        setUsers([]);
+      }
+    } catch (error) {
+      notify(error.message);
+    }
+  }
+
+  // =========================
+  // LOAD SOS
+  // =========================
+
+  async function loadSOS() {
+    try {
+      const { response, data } = await apiRequest(
+        API + '/api/sos'
+      );
+
+      if (response.ok && Array.isArray(data)) {
+        setSos(data);
+      } else {
+        setSos([]);
+      }
+    } catch (error) {
+      notify(error.message);
+    }
+  }
+
+  // =========================
+  // UPDATE STATUS
+  // =========================
+
   async function updateStatus(id, status) {
     if (loading) return;
 
@@ -242,12 +294,10 @@ export default function App() {
       );
 
       if (response.ok) {
-        notify(data.message || 'Status updated');
+        notify('Status updated');
         await loadComplaints();
       } else {
-        notify(
-          data.message || 'Unable to update status.'
-        );
+        notify(data.message || 'Unable to update status');
       }
     } catch (error) {
       notify(error.message);
@@ -256,85 +306,286 @@ export default function App() {
     }
   }
 
-  // LOAD SOS
-  async function loadSOS() {
-    try {
-      const { response, data } = await apiRequest(
-        API + '/api/sos'
-      );
+  // =========================
+  // CREATE POLICE ACCOUNT
+  // =========================
 
-      if (response.ok && Array.isArray(data)) {
-        setSos(data);
-      } else {
-        setSos([]);
-      }
-    } catch (error) {
-      notify(error.message);
-    }
-  }
+  async function createPolice(e) {
+    e.preventDefault();
 
-  // LOAD USERS
-  async function loadUsers() {
-    try {
-      const { response, data } = await apiRequest(
-        API + '/api/users'
-      );
-
-      if (response.ok && Array.isArray(data)) {
-        setUsers(data);
-      } else {
-        setUsers([]);
-
-        notify(
-          data.message || 'Unable to load users.'
-        );
-      }
-    } catch (error) {
-      notify(error.message);
-    }
-  }
-
-  // SEND SOS
-  function sendSOS() {
     if (loading) return;
 
-    if (!navigator.geolocation) {
-      notify(
-        'Geolocation is not supported by this device.'
+    setLoading(true);
+
+    const form = e.target;
+    const data = Object.fromEntries(new FormData(form));
+
+    try {
+      const { response, data: result } = await apiRequest(
+        API + '/api/users/police',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        }
       );
 
+      if (response.ok) {
+        notify('Police account created');
+        form.reset();
+        await loadUsers();
+      } else {
+        notify(result.message || 'Unable to create police account');
+      }
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // =========================
+  // ASSIGN OFFICER
+  // =========================
+
+  async function assignOfficer(id, officerEmail) {
+    if (!officerEmail) {
+      notify('Select a police officer first');
       return;
     }
 
     setLoading(true);
 
+    try {
+      const { response, data } = await apiRequest(
+        API + '/api/complaints/' + id + '/assign',
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            officerEmail,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        notify('Officer assigned successfully');
+        await loadComplaints();
+      } else {
+        notify(data.message || 'Unable to assign officer');
+      }
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // =========================
+  // ACCEPT CASE
+  // =========================
+
+  async function acceptCase(id) {
+    setLoading(true);
+
+    try {
+      const { response, data } = await apiRequest(
+        API + '/api/complaints/' + id + '/accept',
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            officerEmail: user.email,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        notify('Case accepted');
+        await loadComplaints();
+      } else {
+        notify(data.message || 'Unable to accept case');
+      }
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // =========================
+  // INVESTIGATION UPDATE
+  // =========================
+
+  async function addInvestigation(id, note) {
+    if (!note.trim()) {
+      notify('Enter an investigation update');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { response, data } = await apiRequest(
+        API + '/api/complaints/' + id + '/investigation',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            officerEmail: user.email,
+            note,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        notify('Investigation update added');
+        await loadComplaints();
+      } else {
+        notify(data.message || 'Unable to add update');
+      }
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // =========================
+  // COMPLETE INVESTIGATION
+  // =========================
+
+  async function completeInvestigation(
+    id,
+    resolutionDetails
+  ) {
+    setLoading(true);
+
+    try {
+      const { response, data } = await apiRequest(
+        API + '/api/complaints/' + id + '/complete',
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            officerEmail: user.email,
+            resolutionDetails,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        notify('Investigation completed');
+        await loadComplaints();
+      } else {
+        notify(data.message || 'Unable to complete investigation');
+      }
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // =========================
+  // EVIDENCE UPLOAD
+  // =========================
+
+  async function uploadEvidence(id, file) {
+    if (!file) {
+      notify('Select a file first');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const formData = new FormData();
+
+      formData.append('evidence', file);
+      formData.append(
+        'officerEmail',
+        user.email
+      );
+
+      const { response, data } = await apiRequest(
+        API + '/api/complaints/' + id + '/evidence',
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      if (response.ok) {
+        notify('Evidence uploaded successfully');
+        await loadComplaints();
+      } else {
+        notify(data.message || 'Evidence upload failed');
+      }
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // =========================
+  // SOS
+  // =========================
+
+  function sendSOS() {
+    if (loading) return;
+
+    if (!navigator.geolocation) {
+      notify('Geolocation is not supported');
+      return;
+    }
+
+    setLoading(true);
     notify('Getting your location...');
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
-          const { response, data } = await apiRequest(
-            API + '/api/sos',
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                userEmail: user?.email || null,
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-              }),
-            }
-          );
+          const { response, data } =
+            await apiRequest(
+              API + '/api/sos',
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type':
+                    'application/json',
+                },
+                body: JSON.stringify({
+                  userEmail:
+                    user?.email || null,
+                  latitude:
+                    position.coords.latitude,
+                  longitude:
+                    position.coords.longitude,
+                }),
+              }
+            );
 
           if (response.ok) {
             notify(
-              data.message || 'SOS submitted.'
+              data.message ||
+                'SOS submitted'
             );
           } else {
             notify(
-              data.message || 'Unable to send SOS.'
+              data.message ||
+                'Unable to send SOS'
             );
           }
         } catch (error) {
@@ -345,29 +596,39 @@ export default function App() {
       },
       () => {
         setLoading(false);
-        notify('Location permission denied.');
+        notify('Location permission denied');
       }
     );
   }
 
-  // LOAD DATA WHEN PAGE CHANGES
+  // =========================
+  // LOAD DATA
+  // =========================
+
   useEffect(() => {
-    if (page === 'track' || page === 'admin') {
+    if (
+      page === 'track' ||
+      page === 'admin' ||
+      page === 'police'
+    ) {
       loadComplaints();
     }
 
     if (page === 'admin') {
-      loadSOS();
       loadUsers();
+      loadSOS();
     }
   }, [page]);
 
+  // =========================
   // NAVIGATION
+  // =========================
+
   const Nav = () => (
     <nav>
       <strong>🛡 Crime Reporting System</strong>
 
-      {user && (
+      {user?.role === 'citizen' && (
         <>
           <button onClick={() => setPage('report')}>
             Report
@@ -385,7 +646,13 @@ export default function App() {
 
       {user?.role === 'admin' && (
         <button onClick={() => setPage('admin')}>
-          Dashboard
+          Admin Dashboard
+        </button>
+      )}
+
+      {user?.role === 'police' && (
+        <button onClick={() => setPage('police')}>
+          Police Dashboard
         </button>
       )}
 
@@ -407,209 +674,592 @@ export default function App() {
     </nav>
   );
 
-  let content;
+  // =========================
+  // POLICE CASE CARD
+  // =========================
 
-  // REGISTER
-  if (page === 'register') {
-    content = (
-      <>
-        <section className="hero">
-          <h1>Create Account</h1>
+  const PoliceCase = ({ c }) => {
+    const [note, setNote] = useState('');
+    const [resolution, setResolution] = useState('');
 
-          <form onSubmit={register}>
-            <input
-              name="name"
-              placeholder="Full name"
-              required
-            />
+    const assignedToMe =
+      c.assignedOfficer === user?.email;
 
-            <input
-              name="email"
-              type="email"
-              placeholder="Email"
-              required
-            />
+    return (
+      <article>
+        <h2>{c.complaintId}</h2>
 
-            <input
-              name="password"
-              type="password"
-              placeholder="Password"
-              required
-            />
+        <p>
+          <strong>Crime:</strong>{' '}
+          {c.crimeType}
+        </p>
 
-            <button type="submit" disabled={loading}>
-              {loading
-                ? 'Creating account...'
-                : 'Register'}
-            </button>
-          </form>
-        </section>
-      </>
-    );
-  }
+        <p>
+          <strong>Location:</strong>{' '}
+          {c.location}
+        </p>
 
-  // LOGIN
-  else if (page === 'login') {
-    content = (
-      <>
-        <section className="hero">
-          <h1>Login</h1>
+        <p>
+          <strong>Description:</strong>{' '}
+          {c.description}
+        </p>
 
-          <form onSubmit={login}>
-            <input
-              name="email"
-              type="email"
-              placeholder="Email"
-              required
-            />
+        <p>
+          <strong>Status:</strong>{' '}
+          {c.status}
+        </p>
 
-            <input
-              name="password"
-              type="password"
-              placeholder="Password"
-              required
-            />
+        <p>
+          <strong>Investigation:</strong>{' '}
+          {c.investigationStatus ||
+            'Not Started'}
+        </p>
 
-            <button type="submit" disabled={loading}>
-              {loading
-                ? 'Logging in...'
-                : 'Login'}
-            </button>
-          </form>
-        </section>
-      </>
-    );
-  }
+        <p>
+          <strong>Assigned Officer:</strong>{' '}
+          {c.assignedOfficer ||
+            'Not assigned'}
+        </p>
 
-  // REPORT
-  else if (page === 'report') {
-    content = (
-      <>
-        <section>
-          <h1>File a Complaint</h1>
+        {!assignedToMe && !c.assignedOfficer && (
+          <p>
+            This case has not been assigned yet.
+          </p>
+        )}
 
-          <form onSubmit={report}>
-            <select
-              name="crimeType"
-              required
-            >
-              <option value="">
-                Select crime type
-              </option>
+        {assignedToMe &&
+          c.investigationStatus !==
+            'Completed' && (
+            <>
+              {c.investigationStatus ===
+                'Not Started' ||
+              c.investigationStatus ===
+                'Accepted' ? (
+                <button
+                  disabled={loading}
+                  onClick={() =>
+                    acceptCase(c._id)
+                  }
+                >
+                  Accept Case
+                </button>
+              ) : null}
 
-              <option>Theft</option>
-              <option>Fraud</option>
-              <option>Harassment</option>
-              <option>Violence</option>
-              <option>Cybercrime</option>
-              <option>Other</option>
-            </select>
+              <h3>Investigation Update</h3>
 
-            <textarea
-              name="description"
-              placeholder="Describe the incident"
-              required
-            />
-
-            <input
-              name="location"
-              placeholder="Incident location"
-              required
-            />
-
-            <label>
-              <input
-                name="anonymous"
-                type="checkbox"
+              <textarea
+                value={note}
+                onChange={(e) =>
+                  setNote(e.target.value)
+                }
+                placeholder="Enter investigation findings, actions taken, observations..."
               />
 
-              Submit anonymously
-            </label>
+              <button
+                disabled={loading}
+                onClick={() => {
+                  addInvestigation(
+                    c._id,
+                    note
+                  );
+                  setNote('');
+                }}
+              >
+                Add Investigation Update
+              </button>
 
-            <button
-              type="submit"
-              disabled={loading}
-            >
-              {loading
-                ? 'Submitting complaint...'
-                : 'Submit Complaint'}
-            </button>
-          </form>
-        </section>
-      </>
+              <h3>Case Evidence</h3>
+
+              <input
+                type="file"
+                onChange={(e) => {
+                  const file =
+                    e.target.files?.[0];
+
+                  if (file) {
+                    uploadEvidence(
+                      c._id,
+                      file
+                    );
+                    e.target.value = '';
+                  }
+                }}
+                disabled={loading}
+              />
+
+              <p>
+                Maximum file size: 10 MB.
+              </p>
+
+              <h3>Complete Investigation</h3>
+
+              <textarea
+                value={resolution}
+                onChange={(e) =>
+                  setResolution(
+                    e.target.value
+                  )
+                }
+                placeholder="Enter final resolution details..."
+              />
+
+              <button
+                disabled={loading}
+                onClick={() =>
+                  completeInvestigation(
+                    c._id,
+                    resolution
+                  )
+                }
+              >
+                Investigation Completed
+              </button>
+            </>
+          )}
+
+        {c.investigationUpdates?.length > 0 && (
+          <>
+            <h3>Investigation Timeline</h3>
+
+            {c.investigationUpdates.map(
+              (update, index) => (
+                <div key={index}>
+                  <p>
+                    <strong>
+                      {update.officerEmail}
+                    </strong>
+                  </p>
+
+                  <p>{update.note}</p>
+
+                  <small>
+                    {new Date(
+                      update.createdAt
+                    ).toLocaleString()}
+                  </small>
+                </div>
+              )
+            )}
+          </>
+        )}
+
+        {c.evidence?.length > 0 && (
+          <>
+            <h3>Evidence</h3>
+
+            {c.evidence.map(
+              (file, index) => (
+                <div key={index}>
+                  <p>
+                    <strong>
+                      {file.originalName}
+                    </strong>
+                  </p>
+
+                  <small>
+                    Uploaded by:{' '}
+                    {file.uploadedBy}
+                    <br />
+                    {new Date(
+                      file.uploadedAt
+                    ).toLocaleString()}
+                  </small>
+
+                  <br />
+
+                  <a
+                    href={
+                      API + file.path
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View Evidence
+                  </a>
+                </div>
+              )
+            )}
+          </>
+        )}
+
+        {c.resolutionDetails && (
+          <>
+            <h3>Resolution</h3>
+
+            <p>
+              {c.resolutionDetails}
+            </p>
+          </>
+        )}
+      </article>
+    );
+  };
+
+  let content;
+
+  // =========================
+  // REGISTER
+  // =========================
+
+  if (page === 'register') {
+    content = (
+      <section className="hero">
+        <h1>Create Account</h1>
+
+        <form onSubmit={register}>
+          <input
+            name="name"
+            placeholder="Full name"
+            required
+          />
+
+          <input
+            name="email"
+            type="email"
+            placeholder="Email"
+            required
+          />
+
+          <input
+            name="password"
+            type="password"
+            placeholder="Password"
+            required
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+          >
+            {loading
+              ? 'Creating account...'
+              : 'Register'}
+          </button>
+        </form>
+      </section>
     );
   }
 
-  // TRACK
-  else if (page === 'track') {
+  // =========================
+  // LOGIN
+  // =========================
+
+  else if (page === 'login') {
+    content = (
+      <section className="hero">
+        <h1>Login</h1>
+
+        <form onSubmit={login}>
+          <input
+            name="email"
+            type="email"
+            placeholder="Email"
+            required
+          />
+
+          <input
+            name="password"
+            type="password"
+            placeholder="Password"
+            required
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+          >
+            {loading
+              ? 'Logging in...'
+              : 'Login'}
+          </button>
+        </form>
+      </section>
+    );
+  }
+
+  // =========================
+  // REPORT
+  // =========================
+
+  else if (
+    page === 'report' &&
+    user?.role === 'citizen'
+  ) {
+    content = (
+      <section>
+        <h1>File a Complaint</h1>
+
+        <form onSubmit={report}>
+          <select
+            name="crimeType"
+            required
+          >
+            <option value="">
+              Select crime type
+            </option>
+
+            <option>Theft</option>
+            <option>Fraud</option>
+            <option>Harassment</option>
+            <option>Violence</option>
+            <option>Cybercrime</option>
+            <option>Other</option>
+          </select>
+
+          <textarea
+            name="description"
+            placeholder="Describe the incident"
+            required
+          />
+
+          <input
+            name="location"
+            placeholder="Incident location"
+            required
+          />
+
+          <label>
+            <input
+              name="anonymous"
+              type="checkbox"
+            />
+            Submit anonymously
+          </label>
+
+          <button
+            type="submit"
+            disabled={loading}
+          >
+            {loading
+              ? 'Submitting...'
+              : 'Submit Complaint'}
+          </button>
+        </form>
+      </section>
+    );
+  }
+
+  // =========================
+  // CITIZEN TRACKING
+  // =========================
+
+  else if (
+    page === 'track' &&
+    user?.role === 'citizen'
+  ) {
+    content = (
+      <section>
+        <h1>My Complaints</h1>
+
+        {complaints.map((c) => (
+          <article key={c._id}>
+            <h2>{c.complaintId}</h2>
+
+            <p>
+              <strong>Status:</strong>{' '}
+              {c.status}
+            </p>
+
+            <p>
+              <strong>Investigation:</strong>{' '}
+              {c.investigationStatus ||
+                'Not Started'}
+            </p>
+
+            <p>
+              <strong>Crime:</strong>{' '}
+              {c.crimeType}
+            </p>
+
+            <p>
+              <strong>Location:</strong>{' '}
+              {c.location}
+            </p>
+
+            <h3>Case Timeline</h3>
+
+            <p>
+              Submitted:{' '}
+              {new Date(
+                c.createdAt
+              ).toLocaleString()}
+            </p>
+
+            {c.acceptedAt && (
+              <p>
+                Accepted:{' '}
+                {new Date(
+                  c.acceptedAt
+                ).toLocaleString()}
+              </p>
+            )}
+
+            {c.investigationUpdates?.map(
+              (update, index) => (
+                <div key={index}>
+                  <p>
+                    <strong>
+                      Investigation update
+                    </strong>
+                  </p>
+
+                  <p>{update.note}</p>
+
+                  <small>
+                    {new Date(
+                      update.createdAt
+                    ).toLocaleString()}
+                  </small>
+                </div>
+              )
+            )}
+
+            {c.resolutionDetails && (
+              <>
+                <h3>Resolution</h3>
+                <p>
+                  {c.resolutionDetails}
+                </p>
+              </>
+            )}
+
+            {c.evidence?.length > 0 && (
+              <>
+                <h3>Case Evidence</h3>
+
+                {c.evidence.map(
+                  (file, index) => (
+                    <div key={index}>
+                      <p>
+                        {file.originalName}
+                      </p>
+
+                      <a
+                        href={
+                          API + file.path
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        View Evidence
+                      </a>
+                    </div>
+                  )
+                )}
+              </>
+            )}
+          </article>
+        ))}
+
+        {!complaints.length && (
+          <p>No complaints found.</p>
+        )}
+      </section>
+    );
+  }
+
+  // =========================
+  // SOS
+  // =========================
+
+  else if (page === 'sos') {
+    content = (
+      <section>
+        <h1>Emergency SOS</h1>
+
+        <p className="warning">
+          Academic prototype: this does not contact
+          real police or emergency services.
+        </p>
+
+        <button
+          className="sos"
+          onClick={sendSOS}
+          disabled={loading}
+        >
+          {loading
+            ? 'Sending SOS...'
+            : 'SEND SOS'}
+        </button>
+      </section>
+    );
+  }
+
+  // =========================
+  // POLICE DASHBOARD
+  // =========================
+
+  else if (
+    page === 'police' &&
+    user?.role === 'police'
+  ) {
+    const assignedCases =
+      complaints.filter(
+        (c) =>
+          c.assignedOfficer ===
+          user.email
+      );
+
     content = (
       <>
+        <section className="hero">
+          <h1>Police Dashboard</h1>
+
+          <p>
+            Welcome, {user.name}.
+          </p>
+
+          <p>
+            Manage your assigned cases,
+            investigations and evidence.
+          </p>
+        </section>
+
         <section>
-          <h1>My Complaints</h1>
+          <h2>
+            Assigned Cases ({assignedCases.length})
+          </h2>
 
-          {complaints.map((c) => (
-            <article key={c._id}>
-              <b>{c.complaintId}</b>
-
-              <span>
-                {c.status}
-              </span>
-
-              <p>
-                {c.crimeType} — {c.location}
-              </p>
-
-              <small>
-                {new Date(
-                  c.createdAt
-                ).toLocaleString()}
-              </small>
-            </article>
+          {assignedCases.map((c) => (
+            <PoliceCase
+              key={c._id}
+              c={c}
+            />
           ))}
 
-          {!complaints.length && (
-            <p>No complaints found.</p>
+          {!assignedCases.length && (
+            <p>
+              No cases are currently assigned
+              to you.
+            </p>
           )}
         </section>
       </>
     );
   }
 
-  // SOS
-  else if (page === 'sos') {
-    content = (
-      <>
-        <section>
-          <h1>Emergency SOS</h1>
-
-          <p className="warning">
-            Academic prototype: this does not contact
-            real police or emergency services.
-          </p>
-
-          <button
-            className="sos"
-            onClick={sendSOS}
-            disabled={loading}
-          >
-            {loading
-              ? 'Sending SOS...'
-              : 'SEND SOS'}
-          </button>
-        </section>
-      </>
-    );
-  }
-
+  // =========================
   // ADMIN DASHBOARD
-  else if (page === 'admin') {
-    const resolvedCount = complaints.filter(
-      (c) => c.status === 'Resolved'
-    ).length;
+  // =========================
 
-    const activeCount = complaints.filter(
-      (c) => c.status !== 'Resolved'
-    ).length;
+  else if (
+    page === 'admin' &&
+    user?.role === 'admin'
+  ) {
+    const policeUsers =
+      users.filter(
+        (u) => u.role === 'police'
+      );
+
+    const resolvedCount =
+      complaints.filter(
+        (c) => c.status === 'Resolved'
+      ).length;
+
+    const activeCount =
+      complaints.filter(
+        (c) => c.status !== 'Resolved'
+      ).length;
 
     content = (
       <>
@@ -617,13 +1267,13 @@ export default function App() {
           <h1>Admin Dashboard</h1>
 
           <p>
-            Monitor users, complaints and active SOS
-            alerts.
+            Manage users, complaints,
+            police assignments and SOS alerts.
           </p>
         </section>
 
         <section>
-          <h2>Dashboard Statistics</h2>
+          <h2>Statistics</h2>
 
           <article>
             <b>Total Users</b>
@@ -646,9 +1296,233 @@ export default function App() {
           </article>
 
           <article>
-            <b>Active SOS Alerts</b>
+            <b>Active SOS</b>
             <h2>{sos.length}</h2>
           </article>
+        </section>
+
+        <section>
+          <h2>Create Police Account</h2>
+
+          <form onSubmit={createPolice}>
+            <input
+              name="name"
+              placeholder="Officer name"
+              required
+            />
+
+            <input
+              name="email"
+              type="email"
+              placeholder="Officer email"
+              required
+            />
+
+            <input
+              name="password"
+              type="password"
+              placeholder="Temporary password"
+              required
+            />
+
+            <button
+              type="submit"
+              disabled={loading}
+            >
+              Create Police Account
+            </button>
+          </form>
+        </section>
+
+        <section>
+          <h2>Police Officers</h2>
+
+          {policeUsers.map((officer) => (
+            <article key={officer._id}>
+              <b>{officer.name}</b>
+
+              <p>{officer.email}</p>
+
+              <small>
+                Role: Police
+              </small>
+            </article>
+          ))}
+
+          {!policeUsers.length && (
+            <p>
+              No police accounts created yet.
+            </p>
+          )}
+        </section>
+
+        <section>
+          <h2>All Complaints</h2>
+
+          {complaints.map((c) => (
+            <article key={c._id}>
+              <h2>{c.complaintId}</h2>
+
+              <p>
+                <strong>Crime:</strong>{' '}
+                {c.crimeType}
+              </p>
+
+              <p>
+                <strong>Description:</strong>{' '}
+                {c.description}
+              </p>
+
+              <p>
+                <strong>Location:</strong>{' '}
+                {c.location}
+              </p>
+
+              <p>
+                <strong>Status:</strong>{' '}
+                {c.status}
+              </p>
+
+              <p>
+                <strong>Investigation:</strong>{' '}
+                {c.investigationStatus ||
+                  'Not Started'}
+              </p>
+
+              <p>
+                <strong>Assigned Officer:</strong>{' '}
+                {c.assignedOfficer ||
+                  'Not assigned'}
+              </p>
+
+              <select
+                disabled={loading}
+                defaultValue=""
+                onChange={(e) =>
+                  assignOfficer(
+                    c._id,
+                    e.target.value
+                  )
+                }
+              >
+                <option value="">
+                  Assign Police Officer
+                </option>
+
+                {policeUsers.map(
+                  (officer) => (
+                    <option
+                      key={officer._id}
+                      value={officer.email}
+                    >
+                      {officer.name} —{' '}
+                      {officer.email}
+                    </option>
+                  )
+                )}
+              </select>
+
+              <br />
+              <br />
+
+              <select
+                value={c.status}
+                disabled={loading}
+                onChange={(e) =>
+                  updateStatus(
+                    c._id,
+                    e.target.value
+                  )
+                }
+              >
+                <option value="Submitted">
+                  Submitted
+                </option>
+
+                <option value="Under Review">
+                  Under Review
+                </option>
+
+                <option value="In Progress">
+                  In Progress
+                </option>
+
+                <option value="Resolved">
+                  Resolved
+                </option>
+              </select>
+
+              {c.investigationUpdates?.length >
+                0 && (
+                <>
+                  <h3>
+                    Investigation Updates
+                  </h3>
+
+                  {c.investigationUpdates.map(
+                    (update, index) => (
+                      <div key={index}>
+                        <p>
+                          <strong>
+                            {update.officerEmail}
+                          </strong>
+                        </p>
+
+                        <p>
+                          {update.note}
+                        </p>
+
+                        <small>
+                          {new Date(
+                            update.createdAt
+                          ).toLocaleString()}
+                        </small>
+                      </div>
+                    )
+                  )}
+                </>
+              )}
+
+              {c.evidence?.length > 0 && (
+                <>
+                  <h3>Evidence</h3>
+
+                  {c.evidence.map(
+                    (file, index) => (
+                      <div key={index}>
+                        <p>
+                          {file.originalName}
+                        </p>
+
+                        <a
+                          href={
+                            API + file.path
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          View Evidence
+                        </a>
+                      </div>
+                    )
+                  )}
+                </>
+              )}
+
+              {c.resolutionDetails && (
+                <>
+                  <h3>Resolution</h3>
+                  <p>
+                    {c.resolutionDetails}
+                  </p>
+                </>
+              )}
+            </article>
+          ))}
+
+          {!complaints.length && (
+            <p>No complaints found.</p>
+          )}
         </section>
 
         <section>
@@ -670,10 +1544,6 @@ export default function App() {
               </small>
             </article>
           ))}
-
-          {!users.length && (
-            <p>No users found.</p>
-          )}
         </section>
 
         <section>
@@ -684,14 +1554,15 @@ export default function App() {
               <b>🚨 SOS Alert</b>
 
               <p>
-                📍 {a.latitude}, {a.longitude}
+                Location:{' '}
+                {a.latitude},{' '}
+                {a.longitude}
               </p>
 
               <small>
                 User:{' '}
                 {a.userEmail || 'Unknown'}
                 <br />
-                Time:{' '}
                 {new Date(
                   a.createdAt
                 ).toLocaleString()}
@@ -703,121 +1574,62 @@ export default function App() {
             <p>No active SOS alerts.</p>
           )}
         </section>
-
-        <section>
-          <h2>All Complaints</h2>
-
-          {complaints.map((c) => (
-            <article key={c._id}>
-              <b>{c.complaintId}</b>
-
-              <span>
-                {c.status}
-              </span>
-
-              <p>
-                <strong>Crime:</strong>{' '}
-                {c.crimeType}
-              </p>
-
-              <p>
-                <strong>Description:</strong>{' '}
-                {c.description}
-              </p>
-
-              <p>
-                <strong>Location:</strong>{' '}
-                {c.location}
-              </p>
-
-              <p>
-                <strong>User:</strong>{' '}
-                {c.anonymous
-                  ? 'Anonymous'
-                  : c.userEmail || 'Unknown'}
-              </p>
-
-              <small>
-                Submitted:{' '}
-                {new Date(
-                  c.createdAt
-                ).toLocaleString()}
-              </small>
-
-              <br />
-              <br />
-
-              <select
-                value={c.status}
-                disabled={loading}
-                onChange={(e) =>
-                  updateStatus(
-                    c._id,
-                    e.target.value
-                  )
-                }
-              >
-                <option>
-                  Submitted
-                </option>
-
-                <option>
-                  Under Review
-                </option>
-
-                <option>
-                  In Progress
-                </option>
-
-                <option>
-                  Resolved
-                </option>
-              </select>
-            </article>
-          ))}
-
-          {!complaints.length && (
-            <p>No complaints found.</p>
-          )}
-        </section>
       </>
     );
   }
 
+  // =========================
   // HOME
+  // =========================
+
   else {
     content = (
-      <>
-        <section className="hero">
-          <h1>
-            Report. Track. Respond.
-          </h1>
+      <section className="hero">
+        <h1>
+          Report. Track. Respond.
+        </h1>
 
-          <p>
-            Digital crime reporting with anonymous
-            complaints, tracking, SOS alerts and an
-            admin dashboard.
-          </p>
+        <p>
+          Digital crime reporting with
+          complaint tracking, SOS alerts,
+          investigation management and
+          evidence handling.
+        </p>
 
-          {user ? (
-            <button
-              onClick={() =>
-                setPage('report')
-              }
-            >
-              File a Complaint
-            </button>
-          ) : (
-            <button
-              onClick={() =>
-                setPage('register')
-              }
-            >
-              Get Started
-            </button>
-          )}
-        </section>
-      </>
+        {user?.role === 'citizen' ? (
+          <button
+            onClick={() =>
+              setPage('report')
+            }
+          >
+            File a Complaint
+          </button>
+        ) : user?.role === 'police' ? (
+          <button
+            onClick={() =>
+              setPage('police')
+            }
+          >
+            Open Police Dashboard
+          </button>
+        ) : user?.role === 'admin' ? (
+          <button
+            onClick={() =>
+              setPage('admin')
+            }
+          >
+            Open Admin Dashboard
+          </button>
+        ) : (
+          <button
+            onClick={() =>
+              setPage('register')
+            }
+          >
+            Get Started
+          </button>
+        )}
+      </section>
     );
   }
 
@@ -838,4 +1650,3 @@ export default function App() {
     </>
   );
 }
-
