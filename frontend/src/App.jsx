@@ -12,7 +12,7 @@ const [usr, setUser] = useState(null);
 
   const [complaints, setComplaints] = useState([]);
   const [sos, setSos] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState([null]);
 
   const notify = (text) => {
     setMessage(text);
