@@ -5,7 +5,7 @@ const API = 'https://crime-reporting-system-mern.onrender.com';
 export default function App() {
   const [page, setPage] = useState('home');
 
-const [usr, setUser] = useState(null);
+const [user, setUser] = useState(null);
 
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
