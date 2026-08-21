@@ -160,7 +160,7 @@ setUser(result.user);
     const form = e.target;
     const data = Object.fromEntries(new FormData(form));
 
-    data.anonymous = data.anonymous === 'on';
+    data.anonymous = false;
     data.userEmail = user?.email || null;
 
     try {
@@ -1007,13 +1007,7 @@ setUser(result.user);
             required
           />
 
-          <label>
-            <input
-              name="anonymous"
-              type="checkbox"
-            />
-            Submit anonymously
-          </label>
+
 
           <button
             type="submit"
