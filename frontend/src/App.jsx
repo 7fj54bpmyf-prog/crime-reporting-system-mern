@@ -104,16 +104,20 @@ const [usr, setUser] = useState(null);
   // LOGIN
   // =========================
 
-  async function login(e) {
-    e.preventDefault();
-    if (loading) return;
+async function login(e) {
+  e.preventDefault();
 
-    setLoading(true);
+  if (loading) return;
 
-    const data = Object.fromEntries(new FormData(e.target));
+  setLoading(true);
 
-    try {
-      const { response, data: result } = await apiRequest(
+  const data = Object.fromEntries(
+    new FormData(e.target)
+  );
+
+  try {
+    const { response, data: result } =
+      await apiRequest(
         API + '/api/login',
         {
           method: 'POST',
@@ -124,28 +128,35 @@ const [usr, setUser] = useState(null);
         }
       );
 
-setUser(result.user);
+    if (response.ok) {
+      setUser(result.user);
 
-        setUser(result.user);
-
-        if (result.user.role === 'admin') {
-          setPage('admin');
-        } else if (result.user.role === 'police') {
-          setPage('police');
-        } else {
-          setPage('home');
-        }
-
-        notify(result.message || 'Login successful');
+      if (result.user.role === 'admin') {
+        setPage('admin');
+      } else if (result.user.role === 'police') {
+        setPage('police');
       } else {
-        notify(result.message || 'Login failed');
+        setPage('home');
       }
-    } catch (error) {
-      notify(error.message);
-    } finally {
-      setLoading(false);
+
+      notify(
+        result.message ||
+          'Login successful'
+      );
+    } else {
+      notify(
+        result.message ||
+          'Login failed'
+      );
     }
+
+  } catch (error) {
+    notify(error.message);
+
+  } finally {
+    setLoading(false);
   }
+}
 
   // =========================
   // REPORT
