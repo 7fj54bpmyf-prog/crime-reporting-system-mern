@@ -162,20 +162,23 @@ async function login(e) {
   // REPORT
   // =========================
 
-  async function report(e) {
-    e.preventDefault();
-    if (loading) return;
+async function report(e) {
+  e.preventDefault();
+  if (loading) return;
 
-    setLoading(true);
+  setLoading(true);
 
-    const form = e.target;
-    const data = Object.fromEntries(new FormData(form));
+  const form = e.target;
+  const data = Object.fromEntries(
+    new FormData(form)
+  );
 
-    data.anonymous = false;
-    data.userEmail = user?.email || null;
+  data.anonymous = !user;
+  data.userEmail = user?.email || null;
 
-    try {
-      const { response, data: result } = await apiRequest(
+  try {
+    const { response, data: result } =
+      await apiRequest(
         API + '/api/complaints',
         {
           method: 'POST',
@@ -186,22 +189,31 @@ async function login(e) {
         }
       );
 
-      if (response.ok) {
-        notify(
-          'Complaint submitted. Tracking ID: ' +
-            result.complaintId
-        );
+    if (response.ok) {
+      notify(
+        'Complaint submitted. Tracking ID: ' +
+          result.complaintId
+      );
 
-        form.reset();
-      } else {
-        notify(result.message || 'Unable to submit complaint');
-      }
-    } catch (error) {
-      notify(error.message);
-    } finally {
-      setLoading(false);
+      form.reset();
+
+      await loadComplaints();
+
+      setPage('track');
+    } else {
+      notify(
+        result.message ||
+          'Unable to submit complaint'
+      );
     }
+
+  } catch (error) {
+    notify(error.message);
+
+  } finally {
+    setLoading(false);
   }
+}
 
   // =========================
   // LOAD COMPLAINTS
@@ -982,8 +994,7 @@ async function login(e) {
   // =========================
 
   else if (
-    page === 'report' &&
-    user?.role === 'citizen'
+    page === 'report'
   ) {
     content = (
       <section>
@@ -1623,6 +1634,25 @@ async function login(e) {
             Get Started
           </button>
         )}
+        <button 
+        onClick={() => 
+        setPage('login')
+        }
+        >
+          Login
+        </button>
+        <button onClick={() =>
+        setPage('register')
+        }
+        >
+          Sign Up
+        </button>
+        <button onClick={() => 
+        setPage('report')
+        }
+        >
+          Report Anonymously
+        </button>
       </section>
     );
   }

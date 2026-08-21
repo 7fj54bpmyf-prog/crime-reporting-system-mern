@@ -12,3 +12,5 @@
 /backend/dist/
 
 .DS_Store
+/frontend/dist/
+/backend/dist/
