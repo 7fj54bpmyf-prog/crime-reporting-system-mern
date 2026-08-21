@@ -5,13 +5,7 @@ const API = 'https://crime-reporting-system-mern.onrender.com';
 export default function App() {
   const [page, setPage] = useState('home');
 
-  const [user, setUser] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('crimeUser') || 'null');
-    } catch {
-      return null;
-    }
-  });
+const [usr, setUser] = useState(null);
 
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -62,7 +56,6 @@ export default function App() {
   }
 
   const logout = () => {
-    localStorage.removeItem('crimeUser');
     setUser(null);
     setPage('home');
     notify('Logged out successfully');
@@ -131,11 +124,7 @@ export default function App() {
         }
       );
 
-      if (response.ok) {
-        localStorage.setItem(
-          'crimeUser',
-          JSON.stringify(result.user)
-        );
+setUser(result.user);
 
         setUser(result.user);
 
