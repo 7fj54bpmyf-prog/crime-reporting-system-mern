@@ -23,7 +23,7 @@ const [user, setUser] = useState(() => {
 
   const [complaints, setComplaints] = useState([]);
   const [sos, setSos] = useState([]);
-  const [users, setUsers] = useState([null]);
+  const [users, setUsers] = useState([]);
 
   const notify = (text) => {
     setMessage(text);
@@ -266,7 +266,11 @@ async function report(e) {
       );
 
       if (response.ok && Array.isArray(data)) {
-        setUsers(data);
+        setUsers(
+          data.filter(
+            (u) => u !== null && u !== undefined
+          )
+        );
       } else {
         setUsers([]);
       }
@@ -1264,7 +1268,7 @@ async function report(e) {
   ) {
     const policeUsers =
       users.filter(
-        (u) => u.role === 'police'
+        (u) => u && u.role === 'police'
       );
 
     const resolvedCount =
