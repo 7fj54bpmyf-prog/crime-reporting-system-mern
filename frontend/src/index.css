@@ -131,6 +131,37 @@ button:disabled {
 
 /* Home */
 
+<div className="home-actions">
+
+  <button
+    onClick={() => setPage('register')}
+  >
+    Get Started
+  </button>
+
+  <button
+    onClick={() => setPage('report')}
+  >
+    Report Anonymously
+  </button>
+
+</div>
+
+.home-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.home-actions button {
+  width: auto;
+  margin: 0;
+  padding: 12px 22px;
+}
+
 .hero {
   text-align: center;
   padding: 60px 25px;
@@ -267,6 +298,14 @@ article span {
     width: 100%;
     padding: 20px;
   }
+
+    .home-actions {
+    gap: 12px;
+  }
+
+  .home-actions button {
+    width: 100%;
+  }
 }
 
 /* Very small phones */
@@ -284,4 +323,3 @@ article span {
     padding: 0 10px;
   }
 }
-```

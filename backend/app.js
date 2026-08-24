@@ -346,6 +346,35 @@ app.get('/api/complaints', async (req, res) => {
   }
 });
 
+// ==========================================
+// TRACK COMPLAINT BY TRACKING ID
+// ==========================================
+
+app.get(
+  '/api/complaints/track/:complaintId',
+  async (req, res) => {
+    try {
+      const complaint =
+        await Complaint.findOne({
+          complaintId:
+            req.params.complaintId
+        });
+
+      if (!complaint) {
+        return res.status(404).json({
+          message: 'Complaint not found'
+        });
+      }
+
+      res.json(complaint);
+
+    } catch (e) {
+      res.status(500).json({
+        message: e.message
+      });
+    }
+  }
+);
 
 // ==========================================
 // UPDATE STATUS
