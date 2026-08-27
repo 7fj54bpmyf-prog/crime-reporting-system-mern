@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const API = 'http://localhost:5000';
+const API = 'https://crimereportingsystemmern.vercel.app/';
 
 const CASE_STATUSES = [
   'Submitted',
